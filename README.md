@@ -57,6 +57,6 @@ Once all of those values are set, you should be able to set it up in cron and ru
 
 My crontab entry looks like this:
 
-`15 * * * * python /usr/local/bin/DynamicDNS_Linode.py`
+`15 * * * * python /usr/local/bin/DynamicDNS.py`
 
 which will check every hour at quarter past.
