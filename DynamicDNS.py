@@ -6,18 +6,19 @@
 
 from urllib2 import Request,urlopen
 from urllib import urlencode
-import json
+import json, os
 
 # Set the next variable to True to do some extra debugging
-debug = False
+debug = True
 
-# Put yout API Key here
-apiKey = "APIKEY000000APIKEY111111APIKEY222222APIKEY333333APIKEY444444APIK"
+# Read the API key and Client Key from the environment
+doApiKey = os.environ["DIGITALOCEANAPI"]
+doClientKey = os.environ["DIGITALOCEANCLIENT"]
 
 # Enter your domain information here
 domainData = {
     "domain1.com" : {   # This is the friendly domain name. Only used for human readability.
-        "domainID" : "000000",    # The Domain ID according to Linode. See README to find this.
+        "domainID" : "000000",    # The Domain ID according to Digital Ocean. See README to find this.
         "resources" : ["#######", "#######"]   # The resource IDs that represent a specific record in this domain
     },
     "domain1.co" : {
@@ -46,21 +47,18 @@ domainData = {
 #
 myIpUrl = "http://bot.whatismyipaddress.com"
 
-#
-# If for some reason the API URI changes, or you wish to send requests to a
-# different URI for debugging reasons, edit this.  {0} will be replaced with the
-# API key set above, and & will be added automatically for parameters.
-#
-url = "https://api.linode.com/api/?api_key={0}".format(apiKey)
-
 # Start by grabbibg the current IP
 sock = urlopen(myIpUrl)
 myIP = sock.read()
 sock.close()
 
+#
+# If for some reason the API URI changes, or you wish to send requests to a
+# different URI for debugging reasons, edit this.  {0} will be replaced with the
+# API key set above, and & will be added automatically for parameters.
+#
 if debug:
     print "Current IP ==> {0}".format(myIP)
-
 
 # Iterate over all of the domains in the dict
 for domain in domainData.keys():
@@ -70,14 +68,14 @@ for domain in domainData.keys():
     
     # Iterate over all of the specific resources to be checked.    
     for resource in domainData[domain]["resources"]:
-        urlParams = "&resultFormat=JSON&action=domainResourceGet&ResourceID={0}&DomainID={1}".format(resource,domainID)
-        req = Request("{0}{1}".format(url,urlParams))
+        url = "https://api.digitalocean.com/domains/{0}/records/{1}?client_id={2}&api_key={3}".format(domainID,resource,doClientKey,doApiKey)
+        req = Request("{0}".format(url))
         res = json.load(urlopen(req,timeout=10))
         
         if debug:
-            print "Linode returned ==> {0}".format(res)
+            print "Digital Ocean returned ==> {0}".format(res)
         
-        curDNS = res['DATA'][0]['TARGET']
+        curDNS = res['record']['data']
         
         if debug:
             print "Existing DNS record ==> {0}".format(curDNS)
@@ -85,25 +83,15 @@ for domain in domainData.keys():
         # Check to see if the record needs to be updated    
         if curDNS != myIP:
             if debug:
-                subdomain = res['DATA'][0]['NAME']
+                subdomain = res['record']['name']
                 if subdomain and len(subdomain) >= 1:
                     fqdn = "{0}.{1}".format(subdomain,domain)
                 else:
                     fqdn = domain
                 
                 print "Updating {} from {} => {}".format(fqdn,curDNS,myIP)
-                
-            # We need to make an update
-            requestParams = {
-                "ResourceID" : resource,
-                "DomainID" : domainData[domain]["domainID"],
-                "Name" : res['DATA'][0]['NAME'],
-                "Type" : res['DATA'][0]['TYPE'],
-                "Target" : myIP,
-                "TTL_SEC" : res['DATA'][0]['TTL_SEC']
-            }
             
-            newUrl = "{0}&{1}&{2}".format(url,"api_action=domain.resource.update",urlencode(requestParams))
+            newUrl = "https://api.digitalocean.com/domains/{0}/records/{1}/edit?client_id={2}&api_key={3}&record_type=A&data={4}".format(domainID,resource,doClientKey,doApiKey,myIP)
             
             if debug:
                 print "The update URL ==> {0}".format(newUrl)    
@@ -112,5 +100,5 @@ for domain in domainData.keys():
             res = json.load(urlopen(req,timeout=10))
             
             if debug:
-                print "Linode returned ==> {0}".format(res)
+                print "Digital Ocean returned ==> {0}".format(res)
             
