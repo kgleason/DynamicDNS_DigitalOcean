@@ -43,9 +43,13 @@ domainData = {
     },
 }
 
-# The URL of a Web service that returns your IP address as plaintext. 
-#
-myIpUrl = "http://bot.whatismyipaddress.com"
+# The URL of a Web service that returns your IPv4 address as plaintext. 
+# For ipv6-test.com, ?json can be appended to the URL to get a json response
+myIpUrl = "http://v4.ipv6-test.com/api/myip.php"
+
+# The URL of a web site that returns your IPv6 address as plain text
+# FOr ipv6-test.com, ?json can be appended to the URL to get a json response
+myIp6Url = "http://v4v6.ipv6-test.com/api/myip.php"
 
 # Start by grabbibg the current IP
 sock = urlopen(myIpUrl)
