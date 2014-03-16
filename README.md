@@ -1,4 +1,4 @@
-# Dyanmic DNS for Linode
+# Dyanmic DNS for Digital Ocean
 
 by Kirk Gleason (<kgleason@gmail.com>) 
 3/15/2014
