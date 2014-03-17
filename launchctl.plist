@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>DIGITALOCEANAPI</key>
+		<string>PUT YOUR DIGITAL OCEAN API KEY HERE</string>
+		<key>DIGITALOCEANCLIENT</key>
+		<string>PUT YOUR DIGITAL OCEAN CLIENT KEY HERE</string>
+	</dict>
+	<key>Label</key>
+	<string>YOU REALLY NEED TO PUT SOMETHING VALID IN THIS</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/local/bin/python</string>
+		<string>/Users/kirk/bin/DynamicDNS.py</string>
+	</array>
+	<key>StartInterval</key>
+	<integer>1800</integer>
+</dict>
+</plist>
