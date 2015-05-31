@@ -1,105 +1,84 @@
-# Python Dynamic DNS for Linode
-# By Kirk Gleason <kirk@gleasons.info> 1/14/2014
+# Python Dynamic DNS for Digital Ocean
+# By Kirk Gleason <kirk@kirkg.us> 5/30/2015
 # This code and associated documentation is released into the public domain.
 #
 # Read the readme to figure out how to set this all up.
 
-from urllib2 import Request,urlopen
-from urllib import urlencode
+import requests
 import json, os
-from config import domainData
+import config
 
-# Set the next variable to True to do some extra debugging
-debug = True
+apiHeaders = {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer {0}".format(config.doAuthBearer)
+    }
 
-# Read the API key and Client Key from the environment
-doApiKey = os.environ["DIGITALOCEANAPI"]
-doClientKey = os.environ["DIGITALOCEANCLIENT"]
+def findDomainRecord(record):
+    foundRecord = None
+    pageNum = 1
 
-# Create a file called config .py with a dictionary named domainData that looks
-# like this
-#domainData = {
-#    "domain1.com" : {   # This is the friendly domain name. Only used for human readability.
-#        "domainID" : "000000",    # The Domain ID according to Digital Ocean. See README to find this.
-#        "resources" : ["#######", "#######"]   # The resource IDs that represent a specific record in this domain
-#    },
-#    "domain1.co" : {
-#        "domainID" : "111111",
-#        "resources" : ["#######", "#######"]
-#    },
-#    "domain1.org" : {
-#        "domainID" : "222222",
-#        "resources" : ["#######", "#######"]
-#    },
-#    "domain1.net" : {
-#        "domainID" : "333333",
-#        "resources" : ["#######", "#######"]
-#    },
-#    "domain1.us" : {
-#        "domainID" : "444444",
-#        "resources" : ["#######", "#######"]
-#    },
-#    "domain2.com" : {
-#        "domainID" : "555555",
-#        "resources" : ["#######", "#######"]
-#    },
-#}
+    while not foundRecord:
+        # Get all of the domain records
+        url = "{0}/{1}/records?page={2}".format(config.apiURL, domain, pageNum)
+        response = requests.get("{0}".format(url),headers=apiHeaders)
+        domainRecords = json.loads(response.text)
 
-# The URL of a Web service that returns your IP address as plaintext.
-#
-myIpUrl = "http://bot.whatismyipaddress.com"
+        for rec in domainRecords['domain_records']:
+            if rec["name"] == record and rec["type"] == "A":
+                foundRecord = {}
+                foundRecord["id"] = rec["id"]
+                foundRecord["ip"] = rec["data"]
+                break
+
+        pageNum = pageNum + 1
+
+        if not foundRecord:
+            try:
+                if not domainRecords['links']['pages']['next']:
+                    # We've reached the end of the data.
+                    foundRecord = -1
+            except:
+                    foundRecord = -1
+
+    return foundRecord
+
+def updateDNS(record, IP):
+    url = "{0}/{1}/records/{2}/".format(config.apiURL, domain, record["id"])
+    d = { "data" : IP }
+    data = json.dumps(d)
+    response = requests.put("{0}".format(url),data=data,headers=apiHeaders)
+    result = json.loads(response.text)
+    print(result)
 
 # Start by grabbibg the current IP
-sock = urlopen(myIpUrl)
-myIP = sock.read()
-sock.close()
+resp = requests.get(config.Url_IP)
+myIP = resp.text
 
-#
-# If for some reason the API URI changes, or you wish to send requests to a
-# different URI for debugging reasons, edit this.  {0} will be replaced with the
-# API key set above, and & will be added automatically for parameters.
-#
-if debug:
-    print "Current IP ==> {0}".format(myIP)
+if config.debug:
+    print("Current IP ==> {0}".format(myIP))
 
 # Iterate over all of the domains in the dict
-for domain in domainData.keys():
-    if debug:
-        print "Starting ==> {0}".format(domain)
-    domainID = domainData[domain]["domainID"]
+for domain in config.domainData.keys():
+    if config.debug:
+        print("Starting ==> {0}".format(domain))
 
-    # Iterate over all of the specific resources to be checked.
-    for resource in domainData[domain]["resources"]:
-        url = "https://api.digitalocean.com/domains/{0}/records/{1}?client_id={2}&api_key={3}".format(domainID,resource,doClientKey,doApiKey)
-        req = Request("{0}".format(url))
-        res = json.load(urlopen(req,timeout=10))
+    # Iterate over all of the hostnames we want to check
+    for record in config.domainData[domain]:
+        if config.debug:
+            print("Searching for {0}.{1}".format(record,domain))
 
-        if debug:
-            print "Digital Ocean returned ==> {0}".format(res)
+        foundRecord = findDomainRecord(record)
 
-        curDNS = res['record']['data']
+        if type(foundRecord) is int:
+            if config.debug:
+                print("Unable to locate DNS record for {0}".format(record))
+            continue
 
-        if debug:
-            print "Existing DNS record ==> {0}".format(curDNS)
+        if config.debug:
+            print("Found ID: {0} and IP: {3} for {1}.{2}".format(foundRecord["id"],record,domain,foundRecord["ip"]))
 
         # Check to see if the record needs to be updated
-        if curDNS != myIP:
-            if debug:
-                subdomain = res['record']['name']
-                if subdomain and len(subdomain) >= 1:
-                    fqdn = "{0}.{1}".format(subdomain,domain)
-                else:
-                    fqdn = domain
-
-                print "Updating {} from {} => {}".format(fqdn,curDNS,myIP)
-
-            newUrl = "https://api.digitalocean.com/domains/{0}/records/{1}/edit?client_id={2}&api_key={3}&record_type=A&data={4}".format(domainID,resource,doClientKey,doApiKey,myIP)
-
-            if debug:
-                print "The update URL ==> {0}".format(newUrl)
-
-            req = Request(newUrl)
-            res = json.load(urlopen(req,timeout=10))
-
-            if debug:
-                print "Digital Ocean returned ==> {0}".format(res)
+        if foundRecord["ip"] != myIP:
+            if config.debug:
+                print("Updating {0}.{1} from {2} => {3}".format(record,domain,foundRecord["ip"],myIP))
+            updateDNS(foundRecord,myIP)
