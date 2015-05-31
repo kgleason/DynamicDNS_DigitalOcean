@@ -1,26 +1,33 @@
+'''
+setting: debug
+Turn debugging output on or off
+'''
+debug = True
+
+'''
+setting: doAuthBearer
+Your Auth Bearer Token from Digital Ocean
+'''
+doAuthBearer = '25e652c6efc375323f1d7b84ac27ecd620c26854e466059a77abe3b8906d7898'
+
+'''
+setting: domainData
+A python dictionary of domains. Each domain/key should have a value that is a list of hostnames to update.
+'''
 domainData = {
-    "domain1.com" : {   # This is the friendly domain name. Only used for human readability.
-        "domainID" : "000000",    # The Domain ID according to Digital Ocean. See README to find this.
-        "resources" : ["#######", "#######"]   # The resource IDs that represent a specific record in this domain
-    },
-    "domain1.co" : {
-        "domainID" : "111111",
-        "resources" : ["#######", "#######"]
-    },
-    "domain1.org" : {
-        "domainID" : "222222",
-        "resources" : ["#######", "#######"]
-    },
-    "domain1.net" : {
-        "domainID" : "333333",
-        "resources" : ["#######", "#######"]
-    },
-    "domain1.us" : {
-        "domainID" : "444444",
-        "resources" : ["#######", "#######"]
-    },
-    "domain2.com" : {
-        "domainID" : "555555",
-        "resources" : ["#######", "#######"]
-    },
+    "domains.com" : 
+        ['home', 'vpn', 'www']
 }
+
+'''
+setting: Url_IP
+A URL that will return your current IP address
+'''
+Url_IP = "http://bot.whatismyipaddress.com"
+
+'''
+setting: apiURL
+The URL of the digital ocean API
+'''
+apiURL = "https://api.digitalocean.com/v2/domains"
+#apiURL = "https://api-digitalocean-com-mtkr1l7y7ugv.runscope.net/v2/domains"
