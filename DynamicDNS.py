@@ -60,9 +60,7 @@ def findDomainRecord(dID, d, record):
         for rec in domainRecords['result']:
             print("checking to see if {0} matched {1}.{2}".format(rec["name"],record,d))
             if rec["name"] == '{0}.{1}'.format(record,d) and rec["type"] == "A":
-                foundRecord = {}
-                foundRecord["id"] = rec["id"]
-                foundRecord["ip"] = rec["content"]
+                foundRecord = rec
                 break
 
         pageNum = pageNum + 1
@@ -76,10 +74,9 @@ def findDomainRecord(dID, d, record):
 
     return foundRecord
 
-def updateDNS(record, IP):
-    url = "{0}/{1}/records/{2}/".format(config.apiURL, domain, record["id"])
-    d = { "data" : IP }
-    data = json.dumps(d)
+def updateDNS(record, domainID):
+    url = "{0}zones/{1}/dns_records/{2}/".format(config.apiURL, domainID, record["id"])
+    data = json.dumps(record)
     response = requests.put("{0}".format(url),data=data,headers=apiHeaders)
     result = json.loads(response.text)
     print(result)
@@ -87,7 +84,6 @@ def updateDNS(record, IP):
 # Start by grabbibg the current IP
 resp = requests.get(config.Url_IP)
 myIP = resp.text
-myIP = '1.1.1.1'
 
 if config.debug:
     print("Current IP ==> {0}".format(myIP))
@@ -121,7 +117,8 @@ for domain in config.domainData.keys():
                 print("RecordID ==> {0}".format(foundRecord["id"]))
 
             # Check to see if the record needs to be updated
-            if foundRecord["ip"] != myIP:
+            if foundRecord["content"] != myIP:
                 if config.debug:
-                    print("Updating {0}.{1} from {2} => {3}".format(record,domain,foundRecord["ip"],myIP))
-                #updateDNS(foundRecord,myIP)
+                    print("Updating {0}.{1} from {2} => {3}".format(record,domain,foundRecord["content"],myIP))
+                foundRecord["content"] = myIP
+                updateDNS(foundRecord,domainID)
