@@ -23,9 +23,6 @@ def getDomainID(d):
         #Get all domain records
         url = "{0}zones&page={1}".format(config.apiURL, pageNum)
 
-        if config.debug:
-            print(url)
-
         response = requests.get("{0}".format(url),
             headers = apiHeaders)
         domains = json.loads(response.text)
@@ -43,23 +40,20 @@ def getDomainID(d):
 
     return foundDomain
 
-def findDomainRecord(dID, d, record):
+def findDomainRecord(dID, d, record, dns_rec_type):
     pageNum = 1
     foundRecord = {}
 
     while not foundRecord:
         # Get all of the domain records
         url = "{0}zones/{1}/dns_records?page={2}".format(config.apiURL, dID, pageNum)
-        if config.debug:
-            print(url)
 
         response = requests.get("{0}".format(url),
             headers=apiHeaders)
         domainRecords = json.loads(response.text)
 
         for rec in domainRecords['result']:
-            print("checking to see if {0} matched {1}.{2}".format(rec["name"],record,d))
-            if rec["name"] == '{0}.{1}'.format(record,d) and rec["type"] == "A":
+            if rec["name"] == '{0}.{1}'.format(record,d) and rec["type"] == dns_rec_type:
                 foundRecord = rec
                 break
 
@@ -79,46 +73,54 @@ def updateDNS(record, domainID):
     data = json.dumps(record)
     response = requests.put("{0}".format(url),data=data,headers=apiHeaders)
     result = json.loads(response.text)
-    print(result)
+    print(result),
 
-# Start by grabbibg the current IP
-resp = requests.get(config.Url_IP)
-myIP = resp.text
 
-if config.debug:
-    print("Current IP ==> {0}".format(myIP))
-
-# Iterate over all of the domains in the dict
-for domain in config.domainData.keys():
+for ip_version in config.cfgDict.keys():
     if config.debug:
-        print("Starting ==> {0}".format(domain))
+        print("Updating {0}".format(ip_version))
 
-    # Get the domain ID
-    domainID = getDomainID(domain)
+    cfg = config.cfgDict[ip_version]
+    if cfg["check"]:
 
-    if not domainID:
-        print("Error locating domain {0}".format(domain))
-        sys.exit(1)
-    else:
+        # Start by grabbibg the current IP
+        resp = requests.get(cfg["url_ip"])
+        myIP = resp.text
+
         if config.debug:
-            print("DomainID ==> {0}".format(domainID))
+            print("Current IP ==> {0}".format(myIP))
 
-    # Iterate over all of the hostnames we want to check
-    for record in config.domainData[domain]:
-        if config.debug:
-            print("Searching ==> {0}.{1}".format(record,domain))
+        # Iterate over all of the domains in the dict
+        for domain in cfg["domainData"].keys():
+            if config.debug:
+                print("Starting ==> {0}".format(domain))
 
-        foundRecord = findDomainRecord(domainID, domain, record)
+        # Get the domain ID
+        domainID = getDomainID(domain)
 
-        if not foundRecord:
-            print("Unable to locate DNS record for {0}".format(record))
+        if not domainID:
+            print("Error locating domain {0}".format(domain))
+            sys.exit(1)
         else:
             if config.debug:
-                print("RecordID ==> {0}".format(foundRecord["id"]))
+                print("DomainID ==> {0}".format(domainID))
 
-            # Check to see if the record needs to be updated
-            if foundRecord["content"] != myIP:
+        # Iterate over all of the hostnames we want to check
+        for hostname in cfg["domainData"][domain]:
+            if config.debug:
+                print("Searching ==> {0}.{1}".format(hostname, domain))
+
+            foundRecord = findDomainRecord(domainID, domain, hostname, cfg["rec_type"])
+
+            if not foundRecord:
+                print("Unable to locate DNS record for {0}".format(hostname))
+            else:
                 if config.debug:
-                    print("Updating {0}.{1} from {2} => {3}".format(record,domain,foundRecord["content"],myIP))
-                foundRecord["content"] = myIP
-                updateDNS(foundRecord,domainID)
+                    print("RecordID ==> {0}".format(foundRecord["id"]))
+
+                # Check to see if the record needs to be updated
+                if foundRecord["content"] != myIP:
+                    if config.debug:
+                        print("Updating {0}.{1} from {2} => {3}".format(hostname,domain,foundRecord["content"],myIP))
+                    foundRecord["content"] = myIP
+                    updateDNS(foundRecord,domainID)

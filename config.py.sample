@@ -5,29 +5,39 @@ Turn debugging output on or off
 debug = True
 
 '''
-setting: doAuthBearer
-Your Auth Bearer Token from Digital Ocean
+setting: cfgAuthBearer
+Your Auth Bearer Token
 '''
-doAuthBearer = '25e652c6efc375323f1d7b84ac27ecd620c26854e466059a77abe3b8906d7898'
+cfgAuthBearer = '0a1b2c3d4e5f6A7B8C9D0E'
 
-'''
-setting: domainData
-A python dictionary of domains. Each domain/key should have a value that is a list of hostnames to update.
-'''
-domainData = {
-    "domains.com" : 
-        ['home', 'vpn', 'www']
-}
-
-'''
-setting: Url_IP
-A URL that will return your current IP address
-'''
-Url_IP = "http://bot.whatismyipaddress.com"
+"""
+setting: cfgAuthEmail
+The email you registered at CloudFlare with
+"""
+cfgAuthEmail = 'username+cloudflare@email.com'
 
 '''
 setting: apiURL
 The URL of the digital ocean API
 '''
-apiURL = "https://api.digitalocean.com/v2/domains"
-#apiURL = "https://api-digitalocean-com-mtkr1l7y7ugv.runscope.net/v2/domains"
+apiURL = "https://api.cloudflare.com/client/v4/"
+
+
+'''
+setting: cfgDict
+A dict with the various things we need to run these tests
+'''
+cfgDict = {
+	"ipv4": {
+		"check": True,
+		"url_ip": 'http://v4.ipv6-test.com/api/myip.php',
+		"rec_type": "A",
+		"domainData": { "domain.com": ['home', 'www']}
+	},
+	"ipv6": {
+		"check": True,
+		"url_ip": 'http://v4v6.ipv6-test.com/api/myip.php',
+		"rec_type": "AAAA",
+		"domainData": { "domain.com": ['home','www']}
+	}
+}
